@@ -7,6 +7,13 @@ CFLAGS = -Os -DF_CPU=16000000UL -mmcu=atmega2560
 
 USBPORT = /dev/ttyUSB0
 
+# CC = avr-gcc
+# CC_OBJCOPY = avr-objcopy
+# CC_SIZE = avr-size
+# CC_UPLOAD = avrdude
+# CONF = C:\Users\adm_robin\AppData\Local\Arduino15\packages\arduino\tools\avrdude\6.3.0-arduino17\etc\avrdude.conf
+# CFLAGS = -Os -DF_CPU=16000000UL -mmcu=atmega2560
+# USBPORT = com6
 all: main.elf
 
 main.elf: main.o adc.o multimeter_click.o spi.o timers.o uart.o

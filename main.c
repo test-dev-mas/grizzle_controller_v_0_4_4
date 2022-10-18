@@ -316,7 +316,7 @@ void init_system() {
 
     DDRA |= (1 << PA0) | (1 << PA1) | (1 << PA2) | (1 << PA3);      // s0/s1/s2/s3 on tcs3200
     PORTA |= (1 << PA0);                                            // frequency scaling 20%
-        
+
     init_adc();
     uart0_init();
     uart2_init();
@@ -381,18 +381,18 @@ void disable_blink() {
 
 void test_1() {
     /* if JLINK probe is connected but not powered, relay-16 should not be opened, otherwise it causes wierd behaviour */
-    RT68_ON
-    _delay_ms(500);
-    relay_call(test_points[16].pin);
-    _delay_ms(500);
-    int volt_jlink_tref = multimeter_read_voltage();
-    // sprintf(buffer, "%u\r\n", volt_jlink_tref);
-    // uart0_puts(buffer);
-    if (volt_jlink_tref > 2400 && volt_jlink_tref < 2500) {         // JLINK powered
-        PORTA &= ~(1 << relay_16[15].pin);                          // T_REF on JLINK is on NO(16), close this relay cuts this connection
-        _delay_ms(1000);
-    }
-    RT68_OFF
+    // RT68_ON
+    // _delay_ms(500);
+    // relay_call(test_points[16].pin);
+    // _delay_ms(500);
+    // int volt_jlink_tref = multimeter_read_voltage();
+    // // sprintf(buffer, "%u\r\n", volt_jlink_tref);
+    // // uart0_puts(buffer);
+    // if (volt_jlink_tref > 2400 && volt_jlink_tref < 2500) {         // JLINK powered
+    //     PORTA &= ~(1 << relay_16[15].pin);                          // T_REF on JLINK is on NO(16), close this relay cuts this connection
+    //     _delay_ms(1000);
+    // }
+    // RT68_OFF
 
     DDRC |= (1 << relay_16[2].pin);
     _delay_ms(500);
@@ -464,36 +464,35 @@ void test_1() {
     _delay_ms(50);
 
     relay_call(test_points[6].pin);
-    _delay_ms(800);
+    _delay_ms(1000);
     int volt_tp35 = multimeter_read_voltage();
 
     // sprintf(buffer, "TP35: %d\r\n", volt_tp35);
     // uart0_puts(buffer);
 
-
     relay_call(test_points[2].pin);
-    _delay_ms(800);
+    _delay_ms(1000);
     int volt_tp21 = multimeter_read_voltage();
 
     // sprintf(buffer, "TP21: %d\r\n", volt_tp21);
     // uart0_puts(buffer);
 
     relay_call(test_points[3].pin);
-    _delay_ms(1200);
+    _delay_ms(1000);
     int volt_tp22 = multimeter_read_voltage();
-
+    // for(;;);
     // sprintf(buffer, "TP22: %d\r\n", volt_tp22);
     // uart0_puts(buffer);
 
     relay_call(test_points[4].pin);
-    _delay_ms(800);
+    _delay_ms(1000);
     int volt_tp25 = multimeter_read_voltage();
 
     // sprintf(buffer, "TP25: %d\r\n", volt_tp25);
     // uart0_puts(buffer);
 
     relay_call(test_points[5].pin);
-    _delay_ms(800);
+    _delay_ms(1000);
     int volt_tp26 = multimeter_read_voltage();
 
     // sprintf(buffer, "TP26: %d\r\n", volt_tp26);
@@ -612,7 +611,7 @@ void test_2() {
                 break;
             
             case 1:                                                 // falling edge
-                if (tick - t_1 < 750 && tick - t_1 > 615) {         // beep ON width: derived empirically
+                if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: derived empirically
                     num_beep++;
                 }
                 edge_direction = 0;
@@ -937,7 +936,7 @@ void test_4() {
 
 void test_5() {
     DDRK |= (1 << relay_16[11].pin);
-
+DDRF|=(1<<PF5);PORTF|=(1<<PF5);
     uint32_t t_0 = tick;                                            // record start time
 
     enable_beep();
@@ -946,6 +945,7 @@ void test_5() {
     start_adc();
     select_adc3();
 
+    uint8_t a = 0;
     uint16_t rms = 0;
     uint8_t rms_count = 0;
     uint8_t color_temp[3] = {0}; 
@@ -1008,12 +1008,16 @@ void test_5() {
             color_data_ready = false;
         }
 
+        // if (tick - t_0 > 1100 && a == 0) {
+        //     enable_beep();
+        //     a = 1;
+        // }
         /* beep detection */
         if (beep_flag) {
             beep_flag = false;
 
-            // sprintf(buffer, "beep: %u\r\n", tick-t_0);
-            // uart0_puts(buffer);
+            // sprintf(buffer, "%u\r\n", tick-t_0);
+            // uart2_puts(buffer);
 
             switch (edge_direction)
             {
@@ -1023,9 +1027,10 @@ void test_5() {
                 break;
             
             case 1:                                                 // falling edge
-                if (tick - t_1 < 720 && tick - t_1 > 622) {         // beep ON width: 655 ms +/- 5% (some boards beep ON width=707ms)
+                if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5% (some boards beep ON width=707ms)
                     num_beep++;
-                    // uart0_transmit('~');
+                    // sprintf(buffer, "beep: %u\r\n", num_beep);
+                    // uart2_puts(buffer);
                 }
                 edge_direction = 0;
                 break;
@@ -1044,7 +1049,8 @@ void test_5() {
         }
 
         /* timeout */
-        if (tick - t_0 > 9000) {
+        if (tick - t_0 > 10000) {
+            PORTF &= ~(1<<PF5);
             break;
         }
     }
@@ -1071,21 +1077,28 @@ void test_5() {
             return;
         }
     }
-    uart0_transmit(0x31 + 2);
+    uart0_transmit(0x30 + i);
     uart0_transmit('P');
+
+    
+    // uart0_transmit(num_beep);       // lower byte for unpack() 'h'
+    // uart0_transmit(0x00);           // higher byte for unpack() 'h'
 
     return;
 }
 
 void test_6() {
+    PORTA &= ~((1 << PA4) | (1 << PA5));
+    _delay_ms(250);
+
     PORTC &= ~(1 << relay_16[2].pin);
     _delay_ms(500);
     PORTC &= ~((1 << relay_16[0].pin) | (1 << relay_16[1].pin));
     _delay_ms(250);
     
-    PORTA &= ~((1 << PA4) | (1 << PA5));
-    _delay_ms(250);
-    uart3_puts(":01w20=165,500,\r\n");
+    // PORTA &= ~((1 << PA4) | (1 << PA5));
+    // _delay_ms(250);
+    uart3_puts(":01w20=165,300,\r\n");
     _delay_ms(10);
     uart3_puts(":01w12=1,\r\n");
 
@@ -1125,7 +1138,7 @@ void test_6() {
     bool positive_edge_detected = false;
     bool negative_edge_detected = false;
 
-    char *psu_voltage[] = {"166", "167", "168", "169", "170", "171", "172", "173", "174", "175", "176", "177", "178", "179", "180", "181", "182", "183", "184", "185"};
+    char *psu_voltage[] = {"0", "166", "167", "168", "169", "170", "171", "172", "173", "174", "175", "176", "177", "178", "179", "180", "181", "182", "183", "184", "185", "186", "187", "188", "189"};
 
     /*  initial state: {blink: green, beep: none, out: on}
         next state: {blink: red (10/5sec), beep: (10/5sec), out:off}
@@ -1175,9 +1188,12 @@ void test_6() {
             rms_diff = rms - rms_old;
             rms_old = rms;
 
+            // sprintf(buffer, "rms: %u\r\n", rms);
+            // uart0_puts(buffer);
+
             if ((rms_diff > 23) && (!positive_edge_detected)) {
                 // uart0_transmit('+');
-                positive_edge_detected = true;
+                // positive_edge_detected = true;
             }
 
             if ((rms_diff < -23) && (!negative_edge_detected)) {
@@ -1201,7 +1217,7 @@ void test_6() {
                 break;
             
             case 1:                                                 // falling edge
-                if (tick - t_1 < 720 && tick - t_1 > 620) {         // beep ON width: 655 ms +/- 5%
+                if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5%
                     number_beep++;
                 }
                 edge_direction = 0;
@@ -1212,7 +1228,9 @@ void test_6() {
             }
             beep_flag = false;
         }
-
+        if (tick - t_0 > 3500) {
+            positive_edge_detected = true;
+        }
         if (positive_edge_detected) {
             if (timer3_flag) {
                 char cmd[40] = ":01w10=";
@@ -1242,6 +1260,12 @@ void test_6() {
         }
     }
 
+    _delay_ms(500);
+    uart3_puts(":01w20=0,0,\r\n");
+    _delay_ms(500);
+    uart3_puts(":01w12=0,\r\n");
+    _delay_ms(500);
+
     PORTA |= (1 << PA4) | (1 << PA5);                               // disconnect TP29, TP30 to dc variable supply (PD3603A)
 
     PORTC |= (1 << relay_16[2].pin) | (1 << relay_16[0].pin) | (1 << relay_16[1].pin);        
@@ -1253,7 +1277,7 @@ void test_6() {
     disable_blink();
     disable_beep();
 
-    uart3_puts(":01w12=0,\r\n");
+    
 
     // sprintf(buffer, "blink: %u beep: %u\r\n", led_blink, number_beep);
     // uart0_puts(buffer);
@@ -1348,7 +1372,7 @@ void test_7() {
                     break;
                 
                 case 1:                                                 // falling edge
-                    if (tick - t_1 < 750 && tick - t_1 > 615) {         // beep ON width: 655 ms +/- 5%
+                    if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5%
                         number_beep++;
                         // uart0_puts("beep!\r\n");
                     }
@@ -1475,9 +1499,9 @@ void test_8() {
                     break;
                 
                 case 1:                                                 // falling edge
-                    if (tick - t_1 < 750 && tick - t_1 > 615) {         // beep ON width: 655 ms +/- 5%
+                    if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5%
                         number_beep++;
-                        // uart0_puts("beep!\r\n");
+                        // uart0_transmit('~');
                     }
                     edge_direction = 0;
                     break;
@@ -1606,7 +1630,7 @@ void test_9() {
                     break;
                 
                 case 1:                                                 // falling edge
-                    if (tick - t_1 < 750 && tick - t_1 > 615) {         // beep ON width: 655 ms +/- 5%
+                    if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5%
                         number_beep++;
                         // uart0_puts("beep!\r\n");
                     }
@@ -1736,7 +1760,7 @@ void test_10() {
                     break;
                 
                 case 1:                                                 // falling edge
-                    if (tick - t_1 < 750 && tick - t_1 > 615) {         // beep ON width: 655 ms +/- 5%
+                    if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5%
                         number_beep++;
                         // uart0_puts("beep!\r\n");
                     }
@@ -1877,7 +1901,7 @@ void test_11() {
                 edge_direction = 1;
                 break;
             case 1:                                                 // falling edge
-                if (tick - t_1 < 720 && tick - t_1 > 622) {         // beep ON width: 655 ms +/- 5% (some boards beep ON width=707ms)
+                if (tick - t_1 < 899 && tick - t_1 > 415) {         // beep ON width: 655 ms +/- 5% (some boards beep ON width=707ms)
                     number_beep++;
                     // uart0_transmit('~');
                 }
